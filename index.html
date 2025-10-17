@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Géolocalisation</title>
+</head>
+
+<body>
+  <h1>🌍 Test de géolocalisation</h1>
+  <p>Active la localisation sur ton smartphone et autorise le navigateur à accéder à ta position.</p>
+
+  <button id="btnCurrent">Obtenir la position</button>
+  <button id="btnWatch">Suivre la position</button>
+
+  <div id="data">
+    <div class="section">
+      <h3>Résultat getCurrentPosition :</h3>
+      <pre id="current"></pre>
+    </div>
+    <div class="section">
+      <h3>Résultat watchPosition :</h3>
+      <pre id="watch"></pre>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
