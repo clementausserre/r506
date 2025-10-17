@@ -16,11 +16,30 @@ var options = {
 // Récupère la position
 navigator.geolocation.getCurrentPosition(successToGetPosition, errorToGetPosition, options);
 
-function successToGetPosition(pos) {
-    var cord = pos.coords;
+var marker, precisionCircle;
 
-    L.marker([cord.latitude, cord.longitude]).addTo(map);
-    map.setView([cord.latitude, cord.longitude], 5);
+function successToGetPosition(pos) {
+    var coords = pos.coords;
+    var precision = coords.accuracy;
+
+    if (marker) {
+        marker.setLatLng([coords.latitude, coords.longitude]);
+    } else {
+        marker = L.marker([coords.latitude, coords.longitude]).addTo(map).bindPopup("Vous êtes ici").openPopup();
+    }
+
+    if (precisionCircle) {
+        precisionCircle.setLatLng([coords.latitude, coords.longitude]).setRadius(precision);
+    } else {
+        precisionCircle = L.circle([coords.latitude, coords.longitude], {
+            radius: precision,
+            color: 'blue',
+            fillColor: '#a0c4ff',
+            fillOpacity: 0.3
+        }).addTo(map);
+    }
+
+    map.setView([coords.latitude, coords.longitude], 5);
     console.log("Marqueur placé !");
 }
 
@@ -45,13 +64,42 @@ async function getCoordinates(city) {
         const lon = parseFloat(data[0].lon);
         console.log(city, lat, lon);
 
-        L.marker([lat, lon]).addTo(map).bindPopup(city).openPopup();
+        return [lat, lon];
     } else {
         console.log("Ville " + city + " non trouvée");
+        return null;
     }
 }
 
-getCoordinates("Nice");
+let pathCoords = [];
+
+async function addPoint(city) {
+    const coords = await getCoordinates(city);
+    if (coords) {
+        pathCoords.push(coords);
+        L.marker(coords).addTo(map).bindPopup(city);
+        return coords;
+    }
+    return null;
+}
+
+function drawLineBetween(point1, point2) {
+    if (point1 && point2) {
+        L.polyline([point1, point2], {
+            color: 'green',
+            weight: 4,
+            opacity: 0.7
+        }).addTo(map);
+
+        map.fitBounds([point1, point2]);
+    }
+}
+
+addPoint("Nice").then(nice => {
+    addPoint("Marseille").then(marseille => {
+        drawLineBetween(nice, marseille);
+    });
+});
 
 // Triangle des Bermudes
 var triangle1 = L.polygon([
