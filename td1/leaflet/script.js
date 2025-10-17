@@ -1,5 +1,5 @@
 // Initialisation de la map
-var map = L.map('map').setView([51.505, -0.09], 13);
+var map = L.map('map').setView([51.505, -0.09], 5);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -20,7 +20,7 @@ function successToGetPosition(pos) {
     var cord = pos.coords;
 
     L.marker([cord.latitude, cord.longitude]).addTo(map);
-    map.setView([cord.latitude, cord.longitude], 13);
+    map.setView([cord.latitude, cord.longitude], 5);
     console.log("Marqueur placé !");
 }
 
@@ -52,3 +52,10 @@ async function getCoordinates(city) {
 }
 
 getCoordinates("Nice");
+
+// Triangle des Bermudes
+var triangle1 = L.polygon([
+    [32.3078, -64.7505],
+    [25.7617, -80.1918],
+    [18.4655, -66.1057]
+], {color: 'red', fillColor: 'lightred', fillOpacity: 0.4}).addTo(map);
