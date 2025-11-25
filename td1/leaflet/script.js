@@ -147,6 +147,18 @@ function afficherTrajetGPS() {
     });
 }
 
+function trajetGpsMapBox() {
+    const token = "pk.eyJ1IjoiY3YwNiIsImEiOiJjajg2MmpzYjcwbWdnMzNsc2NzM2l4eW0yIn0.TfDJipR5II7orUZaC848YA";
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${cityCache["Nice"][1]},${cityCache["Nice"][0]};${cityCache["Monaco"][1]},${cityCache["Monaco"][0]}?geometries=geojson&access_token=${token}`;
+
+    fetch(url)
+    .then(res => res.json())
+    .then(data => {
+        const route = data.routes[0].geometry;
+        L.geoJSON(route, { color: 'purple', weight: 4 }).addTo(map);
+    });
+}
+
 async function init() {
     try {
         const pos = await new Promise((resolve, reject) =>
@@ -159,6 +171,7 @@ async function init() {
 
     await addPoint("Nice");
     await addPoint("Marseille");
+    await addPoint("Monaco");
 
     drawLineBetween(cityCache["Nice"], cityCache["Marseille"]);
 
@@ -167,6 +180,7 @@ async function init() {
 
     afficherLimiteMetropole();
     afficherTrajetGPS();
+    trajetGpsMapBox();
 }
 
 init();
