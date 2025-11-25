@@ -13,14 +13,15 @@ var options = {
   maximumAge: 0,
 };
 
-// Récupère la position
-navigator.geolocation.getCurrentPosition(successToGetPosition, errorToGetPosition, options);
-
 var marker, precisionCircle;
+
+let maPosition;
 
 function successToGetPosition(pos) {
     var coords = pos.coords;
     var precision = coords.accuracy;
+
+    maPosition = [coords.latitude, coords.longitude];
 
     if (marker) {
         marker.setLatLng([coords.latitude, coords.longitude]);
@@ -71,12 +72,18 @@ async function getCoordinates(city) {
     }
 }
 
-let pathCoords = [];
+let cityCache = {};
 
 async function addPoint(city) {
+    if (cityCache[city]) {
+        console.log("Coordonnées récupérées depuis le cache :", city, cityCache[city]);
+        L.marker(cityCache[city]).addTo(map).bindPopup(city);
+        return cityCache[city];
+    }
+
     const coords = await getCoordinates(city);
     if (coords) {
-        pathCoords.push(coords);
+        cityCache[city] = coords;
         L.marker(coords).addTo(map).bindPopup(city);
         return coords;
     }
@@ -95,15 +102,71 @@ function drawLineBetween(point1, point2) {
     }
 }
 
-addPoint("Nice").then(nice => {
-    addPoint("Marseille").then(marseille => {
-        drawLineBetween(nice, marseille);
-    });
-});
-
 // Triangle des Bermudes
 var triangle1 = L.polygon([
     [32.3078, -64.7505],
     [25.7617, -80.1918],
     [18.4655, -66.1057]
 ], {color: 'red', fillColor: 'lightred', fillOpacity: 0.4}).addTo(map);
+
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function afficherLimiteMetropole() {
+    fetch('metropole.geojson')
+    .then(response => response.json())
+    .then(data => {
+        L.geoJSON(data, {
+            style: {
+                color: 'blue',
+                weight: 3,
+                fillOpacity: 0.1
+            }
+        }).addTo(map);
+    });
+}
+
+function afficherTrajetGPS() {
+    const url = `https://router.project-osrm.org/route/v1/driving/${cityCache["Nice"][1]},${cityCache["Nice"][0]};${cityCache["Marseille"][1]},${cityCache["Marseille"][0]}?overview=full&geometries=geojson`;
+
+    fetch(url)
+    .then(res => res.json())
+    .then(data => {
+        const route = data.routes[0].geometry;
+        L.geoJSON(route, { color: 'red', weight: 4 }).addTo(map);
+    });
+}
+
+async function init() {
+    try {
+        const pos = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, options)
+        );
+        successToGetPosition(pos);
+    } catch (err) {
+        errorToGetPosition(err);
+    }
+
+    await addPoint("Nice");
+    await addPoint("Marseille");
+
+    drawLineBetween(cityCache["Nice"], cityCache["Marseille"]);
+
+    let distance = getDistance(maPosition[0], maPosition[1], cityCache["Marseille"][0], cityCache["Marseille"][1]);
+    marker.bindPopup(`Vous êtes ici<br>Distance Marseille : ${distance.toFixed(2)} km`).openPopup();
+
+    afficherLimiteMetropole();
+    afficherTrajetGPS();
+}
+
+init();
